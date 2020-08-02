@@ -2,7 +2,7 @@ package org.minnen.dmswr.data;
 
 import java.util.List;
 
-import org.minnen.dmswr.SwrLib;
+import org.minnen.dmswr.utils.SwrLib;
 import org.minnen.dmswr.utils.TimeLib;
 
 /**

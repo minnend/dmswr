@@ -5,8 +5,8 @@ import java.io.IOException;
 import java.io.StringWriter;
 
 import org.minnen.dmswr.utils.DataIO;
+import org.minnen.dmswr.utils.SwrLib;
 import org.minnen.dmswr.BengenMethod;
-import org.minnen.dmswr.SwrLib;
 import org.minnen.dmswr.utils.Writer;
 import org.minnen.dmswr.viz.Colors;
 import org.minnen.dmswr.utils.FinLib.Inflation;

@@ -10,10 +10,10 @@ import java.util.Map;
 
 import org.minnen.dmswr.utils.DataIO;
 import org.minnen.dmswr.utils.Sequence;
+import org.minnen.dmswr.utils.SwrLib;
 import org.minnen.dmswr.BengenMethod;
 import org.minnen.dmswr.MarwoodMethod;
 import org.minnen.dmswr.NestEggCalculator;
-import org.minnen.dmswr.SwrLib;
 import org.minnen.dmswr.utils.Library;
 import org.minnen.dmswr.utils.TimeLib;
 import org.minnen.dmswr.utils.Writer;

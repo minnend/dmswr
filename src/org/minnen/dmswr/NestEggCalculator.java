@@ -1,5 +1,7 @@
 package org.minnen.dmswr;
 
+import org.minnen.dmswr.utils.SwrLib;
+
 /** Calculates the initial retirement portfolio value (a "nest egg"). */
 public abstract class NestEggCalculator
 {

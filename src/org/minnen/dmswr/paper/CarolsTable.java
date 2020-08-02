@@ -9,10 +9,10 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.minnen.dmswr.BengenMethod;
-import org.minnen.dmswr.SwrLib;
 import org.minnen.dmswr.data.BengenTable;
 import org.minnen.dmswr.data.MonthlyInfo;
 import org.minnen.dmswr.utils.FinLib;
+import org.minnen.dmswr.utils.SwrLib;
 import org.minnen.dmswr.utils.TimeLib;
 import org.minnen.dmswr.utils.FinLib.Inflation;
 

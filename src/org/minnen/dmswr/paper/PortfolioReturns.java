@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.minnen.dmswr.utils.DataIO;
-import org.minnen.dmswr.SwrLib;
+import org.minnen.dmswr.utils.SwrLib;
 import org.minnen.dmswr.utils.Writer;
 import org.minnen.dmswr.utils.FinLib.Inflation;
 import org.minnen.dmswr.utils.TimeLib;

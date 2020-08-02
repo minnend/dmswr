@@ -7,7 +7,7 @@ import java.util.List;
 
 import org.minnen.dmswr.utils.DataIO;
 import org.minnen.dmswr.utils.Sequence;
-import org.minnen.dmswr.SwrLib;
+import org.minnen.dmswr.utils.SwrLib;
 import org.minnen.dmswr.data.BengenTable;
 import org.minnen.dmswr.utils.FinLib.Inflation;
 import org.minnen.dmswr.utils.Writer;

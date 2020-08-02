@@ -1,4 +1,4 @@
-package org.minnen.dmswr;
+package org.minnen.dmswr.utils;
 
 import java.io.File;
 import java.io.IOException;
@@ -7,16 +7,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.minnen.dmswr.utils.Bond;
-import org.minnen.dmswr.utils.DataIO;
-import org.minnen.dmswr.utils.Sequence;
-import org.minnen.dmswr.utils.Shiller;
+import org.minnen.dmswr.BengenMethod;
 import org.minnen.dmswr.data.BengenTable;
 import org.minnen.dmswr.data.MarwoodTable;
 import org.minnen.dmswr.utils.FinLib.Inflation;
-import org.minnen.dmswr.utils.IntPair;
-import org.minnen.dmswr.utils.TimeLib;
-import org.minnen.dmswr.utils.Writer;
 import org.minnen.dmswr.viz.Chart;
 import org.minnen.dmswr.viz.ChartConfig.ChartScaling;
 import org.minnen.dmswr.viz.ChartConfig.ChartTiming;

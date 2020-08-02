@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.minnen.dmswr.utils.FeatureVec;
 import org.minnen.dmswr.utils.Sequence;
+import org.minnen.dmswr.utils.SwrLib;
 import org.minnen.dmswr.data.BengenEntry;
 import org.minnen.dmswr.data.BengenTable;
 import org.minnen.dmswr.data.MarwoodEntry;

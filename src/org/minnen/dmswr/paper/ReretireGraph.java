@@ -9,8 +9,8 @@ import java.util.List;
 
 import org.minnen.dmswr.utils.DataIO;
 import org.minnen.dmswr.utils.Sequence;
+import org.minnen.dmswr.utils.SwrLib;
 import org.minnen.dmswr.MarwoodMethod;
-import org.minnen.dmswr.SwrLib;
 import org.minnen.dmswr.data.BengenTable;
 import org.minnen.dmswr.data.MarwoodTable;
 import org.minnen.dmswr.data.MonthlyInfo;

@@ -1,7 +1,7 @@
 package org.minnen.dmswr.tests;
 
 import org.junit.Test;
-import org.minnen.dmswr.SwrLib;
+import org.minnen.dmswr.utils.SwrLib;
 
 import junit.framework.TestCase;
 
