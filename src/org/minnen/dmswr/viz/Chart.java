@@ -2,17 +2,13 @@ package org.minnen.dmswr.viz;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.LocalDate;
-import java.time.temporal.TemporalAdjusters;
 import java.util.List;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.minnen.dmswr.utils.FeatureVec;
 import org.minnen.dmswr.utils.Sequence;
 import org.minnen.dmswr.utils.FinLib;
-import org.minnen.dmswr.utils.Library;
 import org.minnen.dmswr.utils.TimeLib;
 import org.minnen.dmswr.utils.Writer;
 import org.minnen.dmswr.viz.ChartConfig.ChartScaling;
@@ -63,35 +59,6 @@ public class Chart
       return String.format("%d", index);
     } else {
       throw new NotImplementedException("Unknown chart timing: " + timing);
-    }
-  }
-
-  public static void saveDataCSV(ChartConfig config, Sequence... seqs) throws IOException
-  {
-    File file = new File(config.file.getParentFile(), config.file.getName() + ".csv");
-    try (Writer writer = new Writer(file)) {
-      writer.write("Strategy,");
-      if (config.labels != null) {
-        assert config.labels.length == seqs[0].size();
-        writer.writef("%s\n", String.join(",", config.labels));
-      } else {
-        for (int i = 0; i < seqs[0].size(); ++i) {
-          writer.write(formatTime(i, seqs[0].getTimeMS(i), config.timing));
-          if (i < seqs[0].size() - 1) {
-            writer.write(",");
-          }
-        }
-      }
-      writer.writeln();
-
-      for (Sequence seq : seqs) {
-        writer.writef("%s,", seq.getName());
-        for (int t = 0; t < seq.length(); ++t) {
-          double x = seq.get(t, config.iDim);
-          writer.writef("%.6f%s", x, t == seq.size() - 1 ? "" : ",");
-        }
-        writer.writeln();
-      }
     }
   }
 
@@ -612,183 +579,5 @@ public class Chart
       writer.writef("<div id=\"chart\" style=\"width:%s; height:%s;\" />\n", config.width, config.height);
       writer.write("</body></html>\n");
     }
-  }
-
-  public static void saveHighChartSplines(File file, String title, String width, String height, Sequence... splines)
-      throws IOException
-  {
-    // Write HTML to generate the graph.
-    try (Writer writer = new Writer(file)) {
-      writer.write("<html><head>\n");
-      writer.writef("<script src=\"%s\"></script>\n", jquery);
-      writer.write("<script src=\"js/highcharts.js\"></script>\n");
-      writer.write("  <script type=\"text/javascript\">\n");
-      writer.write("$(function () {\n");
-      writer.write(" $('#chart').highcharts({\n");
-      writer.write("  title: { text: '" + title + "' },\n");
-      writer.write("  chart: { type: 'scatter' },\n");
-      writer.write("  xAxis: {\n");
-      writer.write("   title: {\n");
-      writer.write("    text: 'Annual Volatility',\n");
-      writer.write("    style: { fontSize: '18px' }\n");
-      writer.write("   },\n");
-      writer.write("   minorTickInterval: 0.5,\n");
-      // writer.write(" min: 1.5,\n");
-      // writer.write(" max: 5.0\n");
-      writer.write("  },\n");
-      writer.write("  yAxis: {\n");
-      writer.write("   title: {\n");
-      writer.write("    text: 'Annual Returns',\n");
-      writer.write("    style: { fontSize: '18px' }\n");
-      writer.write("   },\n");
-      writer.write("   minorTickInterval: 1.0\n");
-      writer.write("  },\n");
-      writer.write("  legend: { enabled: true },\n");
-      writer.write("  plotOptions: {\n");
-      writer.write("   scatter: {\n");
-      writer.write("    lineWidth: 2,\n");
-      writer.write("    dataLabels: {\n");
-      writer.write("     enabled: true,\n");
-      writer.write("     formatter: function() { return this.point.name; }\n");
-      writer.write("    }\n");
-      writer.write("   }\n");
-      writer.write("  },\n");
-      writer.write("  series: [{\n");
-      for (int iSpline = 0; iSpline < splines.length; ++iSpline) {
-        Sequence spline = splines[iSpline];
-        writer.write("    name: '" + spline.getName() + "',\n");
-        writer.write("    data: [");
-        for (int i = 0; i < spline.length(); ++i) {
-          double cagr = spline.get(i, 0);
-          double stdev = spline.get(i, 1);
-          String name = spline.get(i).getName();
-          writer.writef("{x:%.3f, y:%.3f, name: '%s'}", stdev, cagr, name == null ? "" : name);
-          if (i < spline.length() - 1) {
-            writer.write(",");
-          }
-        }
-        writer.write("]\n");
-        writer.writef("   }%s\n", iSpline == splines.length - 1 ? "" : ",{");
-      }
-      writer.write("  ]\n");
-      writer.write(" });\n");
-      writer.write("});\n");
-
-      writer.write("</script></head><body>\n");
-      writer.writef("<div id=\"chart\" style=\"width:%s; height:%s\" />\n", width, height);
-      writer.write("</body></html>\n");
-    }
-  }
-
-  public static void saveAnnualStatsTable(File file, int width, boolean bCheckDate, int iPrice, List<Sequence> seqs)
-      throws IOException
-  {
-    saveAnnualStatsTable(file, width, bCheckDate, iPrice, seqs.toArray(new Sequence[seqs.size()]));
-  }
-
-  public static void saveAnnualStatsTable(File file, int width, boolean bCheckDate, int iPrice, Sequence... seqs)
-      throws IOException
-  {
-    final double diffMargin = 0.5;
-    final boolean bIncludeDiff = (seqs.length == 2);
-
-    try (Writer writer = new Writer(file)) {
-      writer.write("<html><head>\n");
-      writer.write("<title>Annual Statistics</title>\n");
-      writer.writef("<script src=\"%s\"></script>\n", jquery);
-      writer.write("<script type=\"text/javascript\" src=\"js/jquery.tablesorter.min.js\"></script>\n");
-      writer.write("<script type=\"text/javascript\">\n");
-      writer.write(" $(document).ready(function() { $(\"#statsTable\").tablesorter( {widgets: ['zebra']} ); } );\n");
-      writer.write("</script>\n");
-      writer.write(
-          "<link rel=\"stylesheet\" href=\"themes/blue/style.css\" type=\"text/css\" media=\"print, projection, screen\" />\n");
-      writer.write("</head><body>\n");
-      writer.writef("<table id=\"statsTable\" class=\"tablesorter\" style=\"width:%spx;\">\n", width);
-      writer.write("<thead><tr>\n");
-
-      double widthPercent = 100.0 / (seqs.length + (bIncludeDiff ? 2 : 1));
-      String th = String.format("<th style=\"width: %.2f%%\">", widthPercent);
-      writer.write(th + "Year</th>\n");
-      for (Sequence seq : seqs) {
-        writer.writef("%s%s</th>\n", th, FinLib.getBaseName(seq.getName()));
-      }
-      if (bIncludeDiff) writer.writef("%sDiff</th>\n", th);
-      writer.write("</tr></thead>\n");
-      writer.write("<tbody>\n");
-
-      LocalDate lastDate = TimeLib.ms2date(seqs[0].getEndMS());
-      int iStart = TimeLib.findStartofFirstYear(seqs[0], bCheckDate);
-      LocalDate date = TimeLib.ms2date(seqs[0].getTimeMS(iStart));
-      double[] returns = new double[seqs.length];
-      while (true) {
-        // TODO refactor code to generate annual returns into function in FinLib.
-        LocalDate nextDate = date.with(TemporalAdjusters.firstDayOfNextYear());
-        int iNext = seqs[0].getIndexAtOrBefore(TimeLib.toMs(nextDate.minusDays(1)));
-
-        writer.write("<tr>\n");
-        writer.writef("<td class=\"center bold\">%d</td>", date.getYear());
-
-        for (int i = 0; i < seqs.length; ++i) {
-          Sequence seq = seqs[i];
-          double tr = FinLib.getTotalReturn(seq, Math.max(iStart - 1, 0), iNext, iPrice);
-          double ar = FinLib.getAnnualReturn(tr, 12);
-          returns[i] = ar;
-        }
-        int iMax = Library.argmax(returns, diffMargin); // index of strategy with largest return
-        for (int i = 0; i < seqs.length; ++i) {
-          boolean bold = (i == iMax);
-          writer.writef("<td%s>%s</td>", bold ? " class=\"bold\"" : "", prettyFloat("%.2f", returns[i]));
-        }
-        if (bIncludeDiff) {
-          double diff = returns[0] - returns[1];
-          String classString = "";
-          if (diff >= diffMargin) classString = " class=\"green\"";
-          else if (diff <= -diffMargin) classString = " class=\"red\"";
-          writer.writef("<td%s>%s</td>", classString, prettyFloat("%.2f", diff));
-        }
-        writer.write("</tr>\n");
-
-        // Find start of next year.
-        date = nextDate;
-        iStart = seqs[0].getIndexAtOrAfter(TimeLib.toMs(date));
-        if (iStart < 0) break;
-
-        // Make sure there is data for December of the next year.
-        if (lastDate.getYear() == date.getYear() && lastDate.getMonthValue() < 12) break;
-      }
-      writer.write("</tbody>\n</table>\n");
-      writer.write("</body></html>\n");
-    }
-  }
-
-  public static String prettyFloat(String format, double x)
-  {
-    String s = String.format(format, x);
-    Matcher m = patternNegZero.matcher(s);
-    return m.matches() ? s.substring(1) : s;
-  }
-
-  /** @return String holding HTML TD text with custom colors. */
-  public static String genColoredCell(String data, boolean cond, String trueColor, String falseColor)
-  {
-    final String color = cond ? trueColor : falseColor;
-    if (color == null || color.isEmpty()) {
-      return String.format("<td>%s</td>", data);
-    } else {
-      return String.format("<td style=\"color: #%s;\">%s</td>", color, data);
-    }
-  }
-
-  /** @return String holding HTML TR text with the given fields. */
-  public static String genTableRow(String tag, String... fields)
-  {
-    StringBuffer sb = new StringBuffer();
-    sb.append("<tr>");
-    for (String field : fields) {
-      field = field.replaceAll("\\n", "<br/>");
-      sb.append(String.format("<%s>%s</%s>", tag, field, tag));
-    }
-    sb.append("</tr>\n");
-    return sb.toString();
   }
 }
