@@ -34,6 +34,11 @@ public class Bond
     DivideBy12, TwelfthRoot
   }
 
+  // How should fractional interest be calculated when determining a (dirty) bond price?
+  public enum FractionalCouponMethod {
+    Linear, Discounted
+  }
+
   public Bond(Sequence bondData, double par, double coupon, double annualFreq, int startIndex, int endIndex)
   {
     assert par > 0.0;
@@ -165,6 +170,13 @@ public class Bond
     return calcPrice(0, annualInterestRate, parValue, years, 0, 0);
   }
 
+  public static double calcPrice(double annualCoupon, double annualInterestRate, double parValue, double years,
+      double paymentsPerYear, double fractionalInterest)
+  {
+    return calcPrice(annualCoupon, annualInterestRate, parValue, years, paymentsPerYear, fractionalInterest,
+        FractionalCouponMethod.Discounted);
+  }
+
   /**
    * Calculates the dirty price of a bond = clean price plus any accrued interest.
    * 
@@ -177,7 +189,7 @@ public class Bond
    * @return current price of the bond
    */
   public static double calcPrice(double annualCoupon, double annualInterestRate, double parValue, double years,
-      double paymentsPerYear, double fractionalInterest)
+      double paymentsPerYear, double fractionalInterest, FractionalCouponMethod fractionalCouponMethod)
   {
     if (paymentsPerYear <= 0.0) {
       paymentsPerYear = 1.0;
@@ -201,13 +213,16 @@ public class Bond
 
     // If we're in between coupon payments, account for accrued interest since last coupon.
     // Details: http://www.economics-finance.org/jefe/fin/Secrestpaper.pdf
-    // TODO also support simple (linear) accrued interest?
     double accruedInterest = 0.0;
     if (fractionalInterest > 0) {
-      double futurePrice = calcPrice(annualCoupon, annualInterestRate, parValue, years - 1.0 / paymentsPerYear,
-          paymentsPerYear, 0.0) + couponPayment;
-      double priceRatio = futurePrice / cleanPrice;
-      accruedInterest = cleanPrice * (Math.pow(priceRatio, fractionalInterest) - 1.0);
+      if (fractionalCouponMethod == FractionalCouponMethod.Discounted) {
+        double futurePrice = calcPrice(annualCoupon, annualInterestRate, parValue, years - 1.0 / paymentsPerYear,
+            paymentsPerYear, 0.0, fractionalCouponMethod) + couponPayment;
+        double priceRatio = futurePrice / cleanPrice;
+        accruedInterest = cleanPrice * (Math.pow(priceRatio, fractionalInterest) - 1.0);
+      } else {
+        accruedInterest = fractionalInterest * couponPayment;
+      }
     }
 
     return cleanPrice + accruedInterest;
@@ -364,7 +379,7 @@ public class Bond
     return seq._div(principal);
   }
 
-  public static Sequence calcBondReturnsYTM(Sequence bondData)
+  public static Sequence calcReturnsYTM(Sequence bondData)
   {
     // More info: https://courses.lumenlearning.com/boundless-finance/chapter/valuing-bonds/
     Sequence seq = new Sequence("Bonds (YTM)");
@@ -377,6 +392,63 @@ public class Bond
 
       final double purchase = FinLib.getPresentValue(par, prevYTM, 10);
       final double sell = FinLib.getPresentValue(par, curYTM, 10 - 1.0 / 12.0);
+
+      final double r = sell / purchase;
+      final double cumulative = seq.getLast(0) * r;
+      seq.addData(cumulative, bondData.getTimeMS(i));
+    }
+    return seq;
+  }
+
+  public static Sequence calcReturnsCruncher(Sequence bondData)
+  {
+    // More info: https://www.bogleheads.org/forum/viewtopic.php?f=10&t=130068&p=1914650#p1914650
+    Sequence seq = new Sequence("10-Year Note (Cruncher)");
+    seq.addData(1.0, bondData.getStartMS());
+
+    final double par = 100.0; // exact value doesn't matter since it divides out
+    for (int i = 1; i < bondData.size(); ++i) {
+      final double prevYTM = bondData.get(i - 1, 0);
+      final double curYTM = bondData.get(i, 0);
+
+      final double purchase = par; // assuming we always purchase at par
+
+      final double annualCoupon = par * prevYTM / 100.0;
+      final double monthlyCoupon = annualCoupon / 12.0;
+      final double monthlyCurYTM = curYTM / 12.0;
+      final double nMonthsLeft = 10 * 12 - 1;
+      final double pricePar = FinLib.getPresentValue(par, monthlyCurYTM, nMonthsLeft);
+      final double priceCoupons = FinLib.getAnnuityPV(monthlyCoupon, monthlyCurYTM, nMonthsLeft);
+      final double sell = pricePar + priceCoupons + monthlyCoupon;
+
+      final double r = sell / purchase;
+      // System.out.printf("%d: %f = %f + %f + %f (%f -> %f) = %f (%f)\n", i, sell, pricePar, priceCoupons,
+      // monthlyCoupon,
+      // prevYTM, curYTM, r, foo);
+      final double cumulative = seq.getLast(0) * r;
+      seq.addData(cumulative, bondData.getTimeMS(i));
+    }
+    return seq;
+  }
+
+  public static Sequence calcReturnsTest(Sequence bondData)
+  {
+    // More info: https://www.bogleheads.org/forum/viewtopic.php?f=10&t=130068&p=1914650#p1914650
+    Sequence seq = new Sequence("10-Year Note (Boyles 2005)");
+    seq.addData(1.0, bondData.getStartMS());
+
+    final double par = 100.0; // exact value doesn't matter since it divides out
+    for (int i = 1; i < bondData.size(); ++i) {
+      final double prevYTM = bondData.get(i - 1, 0);
+      final double curYTM = bondData.get(i, 0);
+
+      final double purchase = par; // assuming we always purchase at par
+
+      final double annualCoupon = par * prevYTM / 100.0;
+      final double nYearsLeft = 10 - 1.0 / 12.0; // one month into 10 year bond
+      final double fractionalInterest = 1.0 / 12.0; // one month in a six month window
+      final double sell = Bond.calcPrice(annualCoupon, curYTM, par, nYearsLeft, 1, fractionalInterest,
+          FractionalCouponMethod.Linear);
 
       final double r = sell / purchase;
       final double cumulative = seq.getLast(0) * r;

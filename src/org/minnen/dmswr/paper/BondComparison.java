@@ -20,15 +20,20 @@ import org.minnen.dmswr.viz.ChartConfig.ChartTiming;
  */
 public class BondComparison
 {
+  /** Explicit calculation of bond price by summing PV of par and all coupon payments. */
   public static double calcBondPrice(double par, double coupon, double annualInterestRate, int years,
       int couponsPerYear)
   {
     annualInterestRate /= couponsPerYear;
     final int nPayments = couponsPerYear * years;
+
+    // Part of price is the PV of all future coupon payments.
     double price = 0;
     for (int i = 1; i <= nPayments; ++i) {
       price += FinLib.getPresentValue(coupon, annualInterestRate, i);
     }
+
+    // Rest of price is the PV of the par repayment.
     price += FinLib.getPresentValue(par, annualInterestRate, nPayments);
     return price;
   }
@@ -77,13 +82,15 @@ public class BondComparison
 
     // explore();
 
-    Sequence bondsYTM = Bond.calcBondReturnsYTM(bondData);
+    Sequence bondsYTM = Bond.calcReturnsYTM(bondData);
     Sequence bondsRebuy = Bond.calcReturnsRebuy(BondFactory.note10Year, bondData, 0, -1);
     Sequence bondsHold = Bond.calcReturnsHold(BondFactory.note10Year, bondData, 0, -1);
     Sequence bondsNaiveDiv = Bond.calcReturnsNaiveInterest(BondFactory.note10Year, bondData, 0, -1,
         DivOrPow.DivideBy12);
     Sequence bondsNaivePow = Bond.calcReturnsNaiveInterest(BondFactory.note10Year, bondData, 0, -1,
         DivOrPow.TwelfthRoot);
+    Sequence bondsCruncher = Bond.calcReturnsCruncher(bondData);
+    Sequence bondsTest = Bond.calcReturnsTest(bondData);
 
     bondsYTM.setName("10-Year Constant Maturity (YTM)");
     bondsNaiveDiv.setName("10-Year Constant Maturity (Naive Interest)");
@@ -92,10 +99,10 @@ public class BondComparison
 
     ChartConfig config = Chart.saveLineChart(new File(DataIO.getOutputPath(), "bond-comparison.html"),
         "Bond Fund Growth Comparison", "100%", "800px", ChartScaling.LOGARITHMIC, ChartTiming.MONTHLY, bondsNaiveDiv,
-        bondsYTM);
+        bondsYTM, bondsCruncher, bondsTest);
     // bondsRebuy, bondsHold, bondsNaiveDiv, bondsNaivePow, simbaBonds);
     config.setAxisLabelFontSize(28);
-    config.setLineWidth(5);
+    config.setLineWidth(3);
     config.setAnimation(false);
     config.setTickInterval(72, -1);
     config.setTickFormatter("return this.value.split(' ')[1];", null);

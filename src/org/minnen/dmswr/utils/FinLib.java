@@ -74,7 +74,16 @@ public final class FinLib
 
   public static double getPresentValue(double futureValue, double interestRate, double nPeriods)
   {
+    // https://www.investopedia.com/terms/p/presentvalue.asp
     return futureValue * Math.pow(FinLib.ret2mul(interestRate), -nPeriods);
+  }
+
+  /** @return present value (PV) of an annuity with some number of constant payments. */
+  public static double getAnnuityPV(double payment, double interestRate, double nPeriods)
+  {
+    // https://www.investopedia.com/terms/p/present-value-annuity.asp
+    final double r = interestRate / 100.0;
+    return payment * (1 - Math.pow(1 + r, -nPeriods)) / r;
   }
 
   /**
@@ -859,7 +868,7 @@ public final class FinLib
         }
         monthEndIndices.add(j - 1);
         m.set(MonthlyAverage, m.get(MonthlyAverage) / nDaysInMonth);
-        double r = m.get(MonthlyClose) / m.get(MonthlyOpen);  // set return as a multiplier (1.04, not 4%).
+        double r = m.get(MonthlyClose) / m.get(MonthlyOpen); // set return as a multiplier (1.04, not 4%).
         m.set(MonthlyReturn, r);
         date = TimeLib.ms2date(v.getTime()).withDayOfMonth(1);
         date = TimeLib.getClosestBusinessDay(date, false);
